@@ -18,35 +18,34 @@ static class Program
     static readonly Regex TimeTag = new(@"\[(\d{1,3}):(\d{2})(?:[.:,](\d{1,3}))?\]", RegexOptions.Compiled);
     static readonly HttpClient Http = CreateHttp();
 
-    // (добавлено) Сколько секунд ждём ответ от сайта: было 15, стало 30
+    // Сколько секунд ждём ответ от сайта
     const int TimeoutSeconds = 30;
 
-    // (добавлено) Один и тот же исполнитель в базах текстов может называться по-разному
-    // (Коммунизм / Егор Летов / Гражданская оборона...). При поиске пробуем все имена из группы.
+    // Один и тот же исполнитель в базах текстов может называться по-разному
     // Список можно дополнять своими группами.
     static readonly string[][] ArtistAliases =
     {
         new[] { "Коммунизм", "Егор Летов", "Гражданская оборона", "Kommunizm", "Egor Letov", "Grazhdanskaya Oborona", "Letov" },
     };
 
-    // (добавлено) Сайты, где заведомо нет текстов песен: в результатах поиска по сайтам их пропускаем
+    // Сайты, где заведомо нет текстов песен: в результатах поиска по сайтам их пропускаем
     static readonly string[] SkipDomains =
     {
         "youtube.", "youtu.be", "spotify.", "apple.com", "music.yandex", "wikipedia.", "discogs.", "last.fm",
         "vk.com", "facebook.", "instagram.", "ok.ru", "shazam.", "deezer.", "soundcloud.", "bandcamp.", "ozon.", "wildberries."
     };
 
-    // (добавлено) Теги, которые делят страницу на блоки; нужны, чтобы вырезать со страницы именно блок с текстом песни
+    // Теги делят страницу на блоки чтобы вырезать со страницы блок с текстом песни
     static readonly Regex BlockTag = new(
         @"</?(div|p|ul|ol|li|table|tr|td|th|h[1-6]|section|article|header|footer|nav|form|blockquote|aside|main)\b",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    // (добавлено) Куда идти после песни: 1 — к следующей, -1 — к предыдущей (меняется клавишами N и P)
+    // Куда идти после песни: 1 — к следующей, -1 — к предыдущей клавишники n и p
     static int step = 1;
 
     static HttpClient CreateHttp()
     {
-        // (добавлено) автоматическая распаковка gzip: многие сайты отдают сжатые страницы
+        // автоматическая распаковка gzip если сайт дал сжатую страницу
         var handler = new HttpClientHandler { AutomaticDecompression = System.Net.DecompressionMethods.All };
         var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(TimeoutSeconds) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("ConsoleLyricsPlayer/1.0 (personal project)");
@@ -57,7 +56,7 @@ static class Program
 
     static async Task<int> Main(string[] args)
     {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);   // (добавлено) чтобы читать старые сайты и файлы в кодировке windows-1251
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);   //  чтоб читать старые сайты и файлы в windows-1251
         Console.OutputEncoding = Encoding.UTF8;   // чтоб кириллица выводились
         Console.Title = "Chudo-muzyka";
         try { Console.CursorVisible = false; } catch { }
@@ -72,7 +71,7 @@ static class Program
                 return 1;
             }
 
-            // (добавлено) Теперь в списке всегда все песни папки, а выбранный номер — это только место, откуда начинаем.
+            // Теперь в списке всегда все песни папки, а выбранный номер — это только место, откуда начинаем.
             // Раньше после выбора номера в очереди оставалась одна песня, и клавише N переключаться было некуда:
             // очередь кончалась и программа доходила до надписи «Нажмите любую клавишу для выхода».
             int index = 0;
@@ -94,7 +93,7 @@ static class Program
             while (index >= 0 && index < songs.Count)
             {
                 var song = songs[index];
-                step = 1;   // (добавлено) по умолчанию после песни идём к следующей; клавиши N и P меняют это значение
+                step = 1;   // по умолчанию после песни идём к следующей; клавиши N и P
                 try
                 {
                     if (!await PlayAsync(song, index < songs.Count - 1, index > 0)) break;   // false — бальзак нажал q
@@ -111,7 +110,7 @@ static class Program
         {
             Console.ResetColor();
             try { Console.CursorVisible = true; } catch { }
-            // (добавлено) Выбрасываем нажатия, накопившиеся в буфере (например, лишнее N), чтобы они не закрыли окно мгновенно
+            // Выбрасываем нажатия, накопившиеся в буфере
             try { while (Console.KeyAvailable) Console.ReadKey(true); } catch { }
             Console.WriteLine("\nНажмите любую клавишу для выхода...");
             try { Console.ReadKey(true); } catch { }
@@ -196,7 +195,7 @@ static class Program
 
         while (output.PlaybackState != PlaybackState.Stopped)
         {
-            while (Console.KeyAvailable && output.PlaybackState != PlaybackState.Stopped)   // (добавлено) после остановки лишние нажатия не разбираем
+            while (Console.KeyAvailable && output.PlaybackState != PlaybackState.Stopped)   // после остановки лишние нажатия не разбираем
             {
                 switch (Console.ReadKey(true).Key)
                 {
@@ -207,21 +206,21 @@ static class Program
 
                     case ConsoleKey.N:
                     case ConsoleKey.RightArrow:
-                        // (добавлено) если следующей песни нет, программа не закрывается, а просто сообщает об этом
+                        // если следующей  нет, программа не закрывается, а просто сообщает об этом
                         if (hasNext) { step = 1; output.Stop(); }
                         else Hint("Это последняя песня в списке, дальше переключаться некуда.");
                         break;
 
                     case ConsoleKey.P:
                     case ConsoleKey.LeftArrow:
-                        // (добавлено) предыдущая песня
+                        //  предыдущая
                         if (hasPrev) { step = -1; output.Stop(); }
                         else Hint("Это первая песня в списке.");
                         break;
 
                     case ConsoleKey.L:
                     {
-                        // (добавлено) ручной поиск текста; пока вы вводите запрос, музыка стоит на паузе
+                        // ручной поиск текста пока вы вводите запрос музыка стоит
                         bool wasPlaying = output.PlaybackState == PlaybackState.Playing;
                         if (wasPlaying) output.Pause();
 
@@ -230,7 +229,7 @@ static class Program
                         {
                             lines = manual.Lines;
                             double pos = (double)output.GetPosition() / output.OutputWaveFormat.AverageBytesPerSecond + offset;
-                            next = lines.FindIndex(l => l.Time > pos);   // строки, которые уже «прозвучали», не выводим
+                            next = lines.FindIndex(l => l.Time > pos);   // строки которые уже прозвучали не выводим
                             if (next < 0) next = lines.Count;
                         }
 
@@ -308,8 +307,8 @@ static class Program
         var name = Regex.Replace(Path.GetFileNameWithoutExtension(path), @"^\d{1,3}\s*[.\-_)]\s*", "");
         name = name.Replace('_', ' ').Trim();   // (добавлено) «Исполнитель_-_Название» тоже понимаем
 
-        // (добавлено) Делим по « - »; номера треков и годы (06, 1987) выбрасываем; название — последняя часть,
-        // исполнитель — первая. Так понимаются и имена вида «Исполнитель - Альбом - 06 - Название».
+        // Делим по " - " номера треков и годы (06, 1987) выбрасываем название — последняя часть
+        // исполнитель — первая Так понимаются и имена вида «Исполнитель - Альбом - 06 - Название»
         var parts = Regex.Split(name, @"\s+[-–—]\s+")
             .Select(p => p.Trim())
             .Where(p => p.Length > 0 && !Regex.IsMatch(p, @"^\d{1,4}$"))
@@ -318,7 +317,7 @@ static class Program
         if (artist.Length == 0 && parts.Count >= 2) artist = parts[0];
         if (title.Length == 0) title = parts.Count >= 1 ? parts[^1] : name;
 
-        // (добавлено) В тегах название иногда записано как «Исполнитель - Название»
+        // В тегах название иногда записано как «Исполнитель - Название»
         if (artist.Length > 0 && title.StartsWith(artist + " - ", StringComparison.OrdinalIgnoreCase))
             title = title.Substring(artist.Length + 3);
 
@@ -334,15 +333,15 @@ static class Program
     {
         // 1 Уже скачанный ранее файл .lrc рядом с песней
         string lrcPath = Path.ChangeExtension(path, ".lrc");
-        string txtPath = Path.ChangeExtension(path, ".txt");   // (добавлено)
-        if (useLocal && File.Exists(lrcPath))   // (добавлено) useLocal = false при ручном поиске: сохранённые файлы пропускаем
+        string txtPath = Path.ChangeExtension(path, ".txt");
+        if (useLocal && File.Exists(lrcPath))   // useLocal = false при ручном поиске: сохранённые файлы пропускаем
         {
             var local = ParseLrc(File.ReadAllText(lrcPath, Encoding.UTF8));
             if (local.Count > 0)
                 return new Lyrics(local, true, "файл " + Path.GetFileName(lrcPath) + " (с таймкодами)");
         }
 
-        // (добавлено) 1б Обычный текст без таймкодов в файле .txt рядом с песней (сохранённый ранее или положенный вами)
+        // 1 Обычный текст без таймкодов в файле .txt рядом с песней
         if (useLocal && File.Exists(txtPath))
         {
             var fromTxt = FromRawText(ReadTextFile(txtPath), duration, "файл " + Path.GetFileName(txtPath));
@@ -371,7 +370,7 @@ static class Program
         // 3 Запасной вариант - обычный текст без таймкодов
         if (fallback == null)
         {
-            // (добавлено) Genius, lyrics.ovh и поиск по сайтам идут одновременно, чтобы не ждать их по очереди
+            // Genius, lyrics.ovh и поиск по сайтам идут одновременно
             Hint("  ищу обычный текст: Genius, lyrics.ovh, поиск по сайтам...");
             var genius = SafeAsync("Genius", () => FromGeniusAsync(artist, title, duration));
             var ovh = artist.Length > 0
@@ -383,7 +382,7 @@ static class Program
             fallback = genius.Result ?? ovh.Result ?? web.Result;
         }
 
-        // (добавлено) Обычный текст тоже запоминаем рядом с песней (в .txt), чтобы в следующий раз не искать заново.
+        // Обычный текст тоже запоминаем рядом с песней чтобы в следующий раз не искать заново.
         // Если там оказался не тот текст, удалите файл .txt или нажмите L во время песни.
         if (fallback is { Synced: false })
             TrySave(txtPath, fallback.RawPlain);
@@ -411,25 +410,24 @@ static class Program
         }
         urls.Add($"https://lrclib.net/api/search?q={U(q)}");
 
-        // (добавлено) Другие имена того же исполнителя (Коммунизм / Егор Летов / Гражданская оборона...)
+        // Другие имена того же исполнителя
         foreach (var alt in AltArtists(artist).Take(4))
             urls.Add($"https://lrclib.net/api/search?track_name={U(clean)}&artist_name={U(alt)}");
 
-        // (добавлено) Поиск только по названию: вдруг в базе исполнитель записан совсем иначе.
-        // Подходящую запись потом выбирает Pick — по названию, исполнителю и длительности.
+        // Поиск только по названию: вдруг в базе исполнитель записан совсем иначе
+        // подходящую запись потом выбирает Pick — по названию, исполнителю и длительности
         urls.Add($"https://lrclib.net/api/search?track_name={U(clean)}");
-
-        // (добавлено) Все запросы идут одновременно: ждём не сумму таймаутов, а самый долгий ответ.
+        //  Все запросы идут одновременно
         // Если часть запросов упала по таймауту, остальные всё равно используются.
         var results = await Task.WhenAll(urls.Distinct().Select(QueryLrclibSafeAsync));
         var entries = results.SelectMany(r => r.Entries).ToList();
         if (entries.Count == 0 && results.All(r => r.Error != null))
-            throw results[0].Error!;   // ни один запрос не прошёл: сообщим об ошибке
+            throw results[0].Error!;   // ни один запрос не прошёл: сообщим
 
         return Pick(entries, artist, title, clean, duration);
     }
 
-    // (добавлено) Запрос к LRCLIB, который не бросает исключение, а возвращает ошибку вместе с результатом
+    // Запрос к LRCLIB, который не бросает исключение, а возвращает ошибку вместе с результатом
     static async Task<(List<Entry> Entries, Exception? Error)> QueryLrclibSafeAsync(string url)
     {
         try { return (await QueryLrclibAsync(url), null); }
@@ -441,11 +439,10 @@ static class Program
         var list = new List<Entry>();
         using var resp = await Http.GetAsync(url);
         if ((int)resp.StatusCode is 404 or 400) return list;   // 404 — не найдено
-        resp.EnsureSuccessStatusCode();   // (добавлено) 429 и 5xx — это ошибка сервера, а не «не найдено»
+        resp.EnsureSuccessStatusCode();   // 429 и 5xx —  ошибка сервера
 
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsByteArrayAsync());
         var root = doc.RootElement;
-
         if (root.ValueKind == JsonValueKind.Array)
             foreach (var e in root.EnumerateArray()) list.Add(ToEntry(e));
         else if (root.ValueKind == JsonValueKind.Object)
@@ -453,7 +450,7 @@ static class Program
 
         return list;
     }
-
+    
     static Entry ToEntry(JsonElement e)
     {
         double duration = e.TryGetProperty("duration", out var d) && d.ValueKind == JsonValueKind.Number
@@ -473,15 +470,14 @@ static class Program
         bool SameTitle(Entry e)
         {
             var n = Norm(e.Title);
-            var nc = Norm(CleanTitle(e.Title));   // (добавлено) то же название без скобок: «Песня (live)» -> «Песня»
+            var nc = Norm(CleanTitle(e.Title));   // то же название без скобок: «Песня (live)» -> «Песня»
             return TitlesMatch(n, a) || TitlesMatch(nc, a) || (b.Length > 0 && (TitlesMatch(n, b) || TitlesMatch(nc, b)));
         }
 
         var candidates = entries.Where(SameTitle).ToList();
 
-        // (добавлено) Текст с таймкодами берём, если длина почти совпадает (до 4 с) либо исполнитель тот же
-        // (или его псевдоним) и длина отличается не больше чем на 15 с. У малоизвестных песен часто лежит только
-        // чуть другая версия, и с поправкой клавишами +/- она всё равно лучше приблизительного тайминга.
+        // Текст с таймкодами берём, если длина почти совпадает (до 4 с) либо исполнитель тот же
+        // (или его псевдоним) и длина отличается не больше чем на 15 с
         var synced = candidates
             .Where(e => e.Synced.Length > 0 &&
                         (Math.Abs(e.Duration - duration) <= 4 ||
@@ -500,7 +496,7 @@ static class Program
             }
         }
 
-        // (добавлено) Обычный текст берём только у того же исполнителя, чтобы не подставить одноимённую чужую песню
+        // Обычный текст берём только у того же исполнителя, чтобы не подставить одноимённую чужую
         var plain = candidates
             .Where(e => e.Plain.Length > 0 && SameArtist(e.Artist, artist))
             .OrderBy(e => Math.Abs(e.Duration - duration))
@@ -615,10 +611,9 @@ static class Program
         Console.ResetColor();
     }
 
-    // (добавлено) ───── Ниже всё новое: сравнение названий и исполнителей, ручной поиск, новые источники текстов ─────
+    // ниже сравнение названий и исполнителей, ручной поиск,  источники текстов
 
-    // (добавлено) Названия считаем одинаковыми, если они совпадают или одно целиком входит в другое,
-    // а короткое составляет не меньше 60% длинного: «Песня про дождь» и «Песня про дождь live» — да, «Песня» и «Песня про любовь» — нет
+    // Названия считаем одинаковыми, если они совпадают или одно целиком входит в другое,
     static bool TitlesMatch(string x, string y)
     {
         if (x.Length == 0 || y.Length == 0) return false;
@@ -627,7 +622,7 @@ static class Program
         return shorter.Length >= 3 && longer.Contains(shorter) && shorter.Length * 10 >= longer.Length * 6;
     }
 
-    // (добавлено) Другие имена того же исполнителя из группы ArtistAliases (если исполнитель в какой-то группе есть)
+    // Другие имена того же исполнителя из группы ArtistAliases
     static IEnumerable<string> AltArtists(string artist)
     {
         string na = Norm(artist);
@@ -647,22 +642,22 @@ static class Program
             return ng.Length > 0 && (norm.Contains(ng) || (norm.Length >= 4 && ng.Contains(norm)));
         });
 
-    // (добавлено) Тот ли это исполнитель: имена похожи или оба входят в одну группу псевдонимов
+    // Тот ли это исполнитель имена похожи или оба входят в одну группу псевдонимов
     static bool SameArtist(string a, string b)
     {
         string na = Norm(a), nb = Norm(b);
-        if (na.Length == 0 || nb.Length == 0) return true;   // исполнитель неизвестен — не придираемся
+        if (na.Length == 0 || nb.Length == 0) return true;   // исполнитель неизвестен — не несём херню
         if (na.Contains(nb) || nb.Contains(na)) return true;
         return ArtistAliases.Any(group => InGroup(na, group) && InGroup(nb, group));
     }
 
-    // (добавлено) Понятное сообщение об ошибке: таймаут показываем по-русски
+    // Понятное сообщение об ошибке: таймаут по-русски
     static string Explain(Exception ex) =>
         (ex is TaskCanceledException or TimeoutException)
             ? $"превышено время ожидания ответа ({TimeoutSeconds} с)"
             : ex.Message;
 
-    // (добавлено) Запускает источник текста; если он упал, пишет предупреждение и возвращает null, не мешая остальным
+    // Запускает источник текста; если он упал, пишет предупреждение и возвращает null, не мешая остальным
     static async Task<Lyrics?> SafeAsync(string name, Func<Task<Lyrics?>> source)
     {
         try { return await source(); }
@@ -673,7 +668,7 @@ static class Program
         }
     }
 
-    // (добавлено) Ручной поиск текста (клавиша L во время песни).
+    // Ручной поиск текста (клавиша L во время песни).
     // Можно ввести «Исполнитель - Название», ссылку на страницу с текстом или путь к файлу .txt / .lrc.
     static async Task<Lyrics?> AskManualAsync(string path, string artist, string album, double duration)
     {
@@ -743,14 +738,14 @@ static class Program
             : ("", input.Trim());
     }
 
-    // (добавлено) Обычный текст без таймкодов -> строки с приблизительным временем
+    // Обычный текст без таймкодов -> строки с приблизительным временем
     static Lyrics? FromRawText(string raw, double duration, string source)
     {
         var lines = Estimate(raw, duration);
         return lines.Count == 0 ? null : new Lyrics(lines, false, source + " (без таймкодов)", null, raw);
     }
 
-    // (добавлено) Текст со страницы, ссылку на которую ввёл пользователь
+    // Текст со страницы, ссылку на которую ввёл пользователь
     static async Task<Lyrics?> FromUrlAsync(string url, double duration)
     {
         string html = await GetPageAsync(url);
@@ -759,7 +754,7 @@ static class Program
         return FromRawText(text, duration, "страница " + new Uri(url).Host);
     }
 
-    // (добавлено) Читает текстовый файл: сначала как UTF-8, а если не получилось, то как windows-1251
+    // Читает текстовый файл: сначала как UTF-8, а если не получилось, то как windows-1251
     static string ReadTextFile(string path)
     {
         var bytes = File.ReadAllBytes(path);
@@ -769,7 +764,7 @@ static class Program
         return text.TrimStart('\uFEFF');
     }
 
-    // (добавлено) Скачивание страницы «как обычный браузер»: часть сайтов не отдаёт страницы программам
+    // Скачивание страницы как обычный браузер часть сайтов не отдаёт страницы программам
     static async Task<string> GetPageAsync(string url)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, url);
@@ -787,7 +782,7 @@ static class Program
         catch { return null; }
     }
 
-    // (добавлено) Читает страницу в правильной кодировке (из заголовка ответа или из тега <meta>)
+    //  Читает страницу в правильной кодировке из заголовка ответа или из тега meta
     static async Task<string> ReadHtmlAsync(HttpResponseMessage resp)
     {
         byte[] bytes = await resp.Content.ReadAsByteArrayAsync();
@@ -809,13 +804,12 @@ static class Program
         return enc.GetString(bytes);
     }
 
-    // (добавлено) Genius: большая база текстов, в том числе русских, но без таймкодов.
-    // Используется публичный поиск сайта; если Genius не пускает программу, об этом будет написано в консоли.
+    // Genius большая база текстов
+    // Используется публичный поиск сайта если Genius не пускает программу об этом будет написано
     static async Task<Lyrics?> FromGeniusAsync(string artist, string title, double duration)
     {
         string clean = CleanTitle(title);
         string a = Norm(title), b = Norm(clean);
-
         var queries = new List<string> { (artist + " " + clean).Trim() };
         foreach (var alt in AltArtists(artist).Take(2))
             queries.Add((alt + " " + clean).Trim());
@@ -867,7 +861,7 @@ static class Program
         }
     }
 
-    // (добавлено) На страницах Genius текст лежит в блоках data-lyrics-container: вырезаем их и превращаем в обычный текст
+    // На страницах Genius текст лежит в блоках data-lyrics-container > превращаем в обычный текст
     static string? ExtractGeniusLyrics(string html)
     {
         var sb = new StringBuilder();
@@ -896,7 +890,7 @@ static class Program
         return text.Length > 0 ? text : null;
     }
 
-    // (добавлено) Genius кладёт внутрь блока с текстом служебные куски (число авторов, переводы, реклама): вырезаем их
+    // Genius кладёт внутрь блока с текстом служебные куски > вырезаем 
     static string RemoveExcludedBlocks(string html)
     {
         while (true)
@@ -909,12 +903,11 @@ static class Program
 
             int end = FindDivEnd(html, open);
             if (end < 0) return html;
-
             html = html.Remove(open, end - open);
         }
     }
 
-    // (добавлено) Находит конец блока <div>, начинающегося в позиции open (с учётом вложенных div)
+    //  Находит конец блока <div>, начинающегося в позиции open
     static int FindDivEnd(string html, int open)
     {
         int depth = 0, i = open;
@@ -940,7 +933,7 @@ static class Program
         return -1;
     }
 
-    // (добавлено) lyrics.ovh: пробуем имя исполнителя и два его псевдонима одновременно
+    // lyrics.ovh: пробуем имя исполнителя и два его псевдонима одновременно
     static async Task<Lyrics?> FromLyricsOvhAnyAsync(string artist, string title, double duration)
     {
         var names = new[] { artist }.Concat(AltArtists(artist)).Take(3).ToList();
@@ -955,9 +948,9 @@ static class Program
         return results.FirstOrDefault(r => r != null);
     }
 
-    // (добавлено) Поиск по сайтам: спрашиваем поисковик «исполнитель название текст песни», открываем первые
+    // Поиск по сайтам спрашиваем поисковик «исполнитель название текст песни»
     // подходящие страницы и вырезаем с них блок с текстом. Страница принимается, только если на ней есть и название
-    // песни, и исполнитель. Это запасной вариант: если поисковик покажет капчу, он просто ничего не найдёт.
+    // песни, и исполнитель.
     static async Task<Lyrics?> FromWebSearchAsync(string artist, string title, double duration)
     {
         string clean = CleanTitle(title);
@@ -1006,7 +999,7 @@ static class Program
         return null;
     }
 
-    // (добавлено) Вырезает текст песни из произвольной страницы. Текст обычно лежит одним блоком,
+    // Вырезает текст песни из произвольной страницы.
     // где строки разделены тегами <br>: ищем самую длинную цепочку таких коротких строк.
     static string? ExtractLyricsFromHtml(string html)
     {
@@ -1036,12 +1029,12 @@ static class Program
                 runStart = -1;
             }
         }
-        if (bestScore < 8) return null;   // слишком короткая цепочка: это не текст песни
+        if (bestScore < 8) return null;   // слишком короткая цепочка не то
 
         var lines = new List<string>();
         if (bestStart > 0)
         {
-            var first = AfterLastBlock(chunks[bestStart - 1]);   // первая строка может «слипнуться» с открывающим тегом блока
+            var first = AfterLastBlock(chunks[bestStart - 1]);   // первая строка может слипнуться с открывающим тегом
             if (first.Length is > 0 and <= 120) lines.Add(first);
         }
         for (int i = bestStart; i <= bestEnd; i++) lines.Add(texts[i]);
@@ -1069,7 +1062,7 @@ static class Program
         return m.Success ? PlainText(chunk.Substring(0, m.Index)) : PlainText(chunk);
     }
 
-    // (добавлено) HTML -> обычный текст, где <br> и концы блоков становятся переводами строк
+    // HTML -> обычный текст, где <br> и концы блоков становятся переводами строк
     static string HtmlToText(string html)
     {
         html = Regex.Replace(html, @"<(script|style|noscript)\b.*?</\1>", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
